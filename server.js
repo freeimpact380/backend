@@ -1,10 +1,16 @@
 if (process.env.NODE_ENV !== "production") require("dotenv").config({ path: "./development.env" });
 const express = require("express");
+const session = require("express-session");
+const cookieParser = require("cookie-parser");
 var mongoose = require("mongoose");
+var cors = require("cors");
 
 const app = express();
 app.use(express.json());
-const session = require("express-session");
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(cors({ credentials: true, origin: process.env.MAIN_URL || "http://localhost:3000" }));
+app.use(express.static(__dirname));
 app.use(
     session({
         secret: process.env.SESSION_SECRET || "localsecretkey",
@@ -14,7 +20,6 @@ app.use(
         cookie: { secure: false },
     })
 );
-
 
 mongoose.connect(process.env.MONGO_URL, function (err) {
     if (err) throw err;
@@ -31,6 +36,9 @@ app.get("/", (req, res) => {
 
 const usersRouter = require("./routes/users");
 app.use("/users", usersRouter);
+
+const charitiesRouter = require("./routes/charities");
+app.use("/charities", charitiesRouter.router);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
