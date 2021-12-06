@@ -69,12 +69,16 @@ router.post("/login", (req, res) => {
 });
 
 //Logging out route
-router.post("/logout", async (req, res) => {
+router.get("/logout", async (req, res) => {
     try {
-        req.session.destroy((err) => {
-            if (err) return res.status(400).json({ message: "Error logging out: " + err.message });
-            res.status(200).json({ message: "Successfully logged out." });
-        });
+        console.log("Logging out", req.sessionID);
+        req.session.destroy();
+        req.session = null;
+        res.status(200).json({ message: "Successfully logged out." });
+        // req.session.destroy((err) => {
+        //     if (err) return res.status(400).json({ message: "Error logging out: " + err.message });
+        //     res.status(200).json({ message: "Successfully logged out." });
+        // });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
