@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const session = require("express-session");
 var cors = require("cors");
 var MongoStore = require("connect-mongo")(session);
+const isDevMode = process.env.NODE_ENV === "development";
 
 mongoose.connect(process.env.MONGO_URL, function (err) {
     if (err) throw err;
@@ -12,24 +13,26 @@ mongoose.connect(process.env.MONGO_URL, function (err) {
 });
 
 const app = express();
+if (!isDevMode) {
+    app.set("trust proxy", 1);
+}
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({ credentials: true, origin: process.env.MAIN_URL || "http://localhost:3000" }));
 app.use(express.static(__dirname));
-app.set("trust proxy", 1);
-app.use(
-    session({
-        secret: process.env.SESSION_SECRET || "localsecretkey",
-        cookie: {
-            maxAge: 1000 * 60 * 60 * 24 /** 24 hours */,
-            secure: false,
-        },
-        saveUninitialized: false,
-        resave: false,
-        store: new MongoStore({ mongooseConnection: mongoose.connection }),
-    })
-);
+let appSession = {
+    secret: process.env.SESSION_SECRET || "localsecretkey",
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24 /** 24 hours */,
+        secure: !isDevMode,
+    },
+    saveUninitialized: true,
+    resave: false,
+    store: new MongoStore({ mongooseConnection: mongoose.connection }),
+};
+console.log(appSession);
+app.use(session(appSession));
 
 app.get("/", (req, res) => {
     try {
