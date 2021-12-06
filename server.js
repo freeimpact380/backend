@@ -4,6 +4,12 @@ const session = require("express-session");
 const cookieParser = require("cookie-parser");
 var mongoose = require("mongoose");
 var cors = require("cors");
+var MongoStore = require("connect-mongo")(session);
+
+mongoose.connect(process.env.MONGO_URL, function (err) {
+    if (err) throw err;
+    console.log("Successfully connected to MongoDB");
+});
 
 const app = express();
 app.use(express.json());
@@ -17,14 +23,11 @@ app.use(
         cookie: { maxAge: 1000 * 60 * 60 * 24 /** 24 hours */ },
         saveUninitialized: false,
         resave: false,
-        cookie: { secure: true },
+        cookie: { secure: process.env.NODE_ENV === "production" ? true : false },
+        store: new MongoStore({ mongooseConnection: mongoose.connection }),
     })
 );
-
-mongoose.connect(process.env.MONGO_URL, function (err) {
-    if (err) throw err;
-    console.log("Successfully connected to MongoDB");
-});
+app.set("trust proxy", true);
 
 app.get("/", (req, res) => {
     try {
